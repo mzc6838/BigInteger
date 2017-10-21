@@ -1,6 +1,12 @@
 #include "bigInt.h"
 #include <string>
+#include <Windows.h>
+#include <math.h>
 using namespace std;
+
+#define BIG_ZERO BigInteger(0)
+#define BIG_ONE BigInteger(1)
+#define BIG_TWO BigInteger(2)
 
 //构造函数
 BigInteger::BigInteger(string num)
@@ -32,21 +38,66 @@ BigInteger::BigInteger(string num)
 	this->numLength = this->num.length();
 }
 
-//复制
-void BigInteger::setData(BigInteger *input)
+BigInteger::BigInteger(int num)
 {
-	this->num = input->num;
-	this->isNegative = input->isNegative;
-	this->isError = input->isError;
-	this->numLength = input->numLength;
-	this->conversion = input->conversion;
+	if (num < 0)
+	{
+		this->isNegative = true;
+		num = 0 - num;
+	}
+	this->setEmpty();
+	char temporary;
+	while (num != 0)
+	{
+		temporary = '0' + (num % 10);
+		this->num = temporary + this->num;
+		num = num / 10;
+	}
+	this->num = SubZero(this->num);
+	this->numLength = this->num.length();
+}
+
+//复制
+void BigInteger::setData(BigInteger input)
+{
+	this->num = input.num;
+	this->isNegative = input.isNegative;
+	this->isError = input.isError;
+	this->numLength = input.numLength;
+	this->conversion = input.conversion;
 }
 
 //置空
 void BigInteger::setEmpty()
 {
 	this->num = "";
+	this->Bin = "";
 	this->numLength = 0;
+}
+
+//转二进制
+void BigInteger::DecToBin()
+{
+	BigInteger NUM(this->num);
+	BigInteger reminder;
+	while (NUM != BIG_ZERO)
+	{
+		this->Bin = (NUM % BIG_TWO).num + this->Bin;
+		NUM = NUM / BIG_TWO;
+	}
+}
+//转十进制
+void BigInteger::BinToDec()
+{
+	BigInteger temporary;
+	for (int i = this->Bin.length() - 1, j = 0; i >= 0; i--, j++)
+	{
+		if (this->Bin[i] == '1') 
+		{
+			temporary = temporary + BigInteger::Power(BIG_TWO, j);
+		}
+	}
+	this->num = temporary.num;
 }
 
 /*
@@ -54,26 +105,26 @@ void BigInteger::setEmpty()
 输入： 两个正数A， B
 return： 运算结果
 */
-BigInteger* BigInteger::_BaseAddition(BigInteger *numA, BigInteger *numB)
+BigInteger BigInteger::_BaseAddition(BigInteger numA, BigInteger numB)
 {
-	string A = numA->num;
-	string B = numB->num;
-	BigInteger *result = new BigInteger;
-	result->setEmpty();
+	string A = numA.num;
+	string B = numB.num;
+	BigInteger result;
+	result.setEmpty();
 
-	if (numA->numLength > numB->numLength)
+	if (numA.numLength > numB.numLength)
 	{
-		A = numA->AddZeroFront(1);
-		B = numB->AddZeroFront(numA->numLength - numB->numLength + 1);
+		A = numA.AddZeroFront(1);
+		B = numB.AddZeroFront(numA.numLength - numB.numLength + 1);
 	}
-	else if (numA->numLength < numB->numLength)
+	else if (numA.numLength < numB.numLength)
 	{
-		B = numB->AddZeroFront(1);
-		A = numA->AddZeroFront(numB->numLength - numA->numLength + 1);
+		B = numB.AddZeroFront(1);
+		A = numA.AddZeroFront(numB.numLength - numA.numLength + 1);
 	}
 	else {
-		A = numA->AddZeroFront(1);
-		B = numB->AddZeroFront(1);
+		A = numA.AddZeroFront(1);
+		B = numB.AddZeroFront(1);
 	}
 
 	for (int i = A.length() - 1; i >= 0; i--)
@@ -81,16 +132,16 @@ BigInteger* BigInteger::_BaseAddition(BigInteger *numA, BigInteger *numB)
 		if (A[i] - '0' + B[i] - '0' > 9)
 		{
 			char sum = A[i] - '0' + B[i] - '0' - 10 + '0';
-			result->num = sum + result->num;
+			result.num = sum + result.num;
 			A[i - 1]++;
 		}
 		else
 		{
-			result->num = (char)(A[i] + B[i] - '0') + result->num;
+			result.num = (char)(A[i] + B[i] - '0') + result.num;
 		}
 	}
-	result->num = BigInteger::SubZero(result->num);
-	result->numLength = result->num.length();
+	result.num = BigInteger::SubZero(result.num);
+	result.numLength = result.num.length();
 	return result;
 }
 
@@ -101,13 +152,13 @@ return： 运算结果
 
 可用负号变换减法次序
 */
-BigInteger* BigInteger::_BaseSubtraction(BigInteger *minuend, BigInteger *meiosis)
+BigInteger BigInteger::_BaseSubtraction(BigInteger minuend, BigInteger meiosis)
 {
 	//minuend > meiosis
-	string A = minuend->num;
-	string B = meiosis->AddZeroFront(minuend->numLength - meiosis->numLength);
-	BigInteger *result = new BigInteger;
-	result->setEmpty();
+	string A = minuend.num;
+	string B = meiosis.AddZeroFront(minuend.numLength - meiosis.numLength);
+	BigInteger result;
+	result.setEmpty();
 
 	for (int i = A.length() - 1; i >= 0; i--)
 	{
@@ -115,21 +166,21 @@ BigInteger* BigInteger::_BaseSubtraction(BigInteger *minuend, BigInteger *meiosi
 		{
 			A[i - 1]--;
 			char temporary = '0' + (A[i] + 10 - B[i]);
-			result->num = temporary + result->num;
+			result.num = temporary + result.num;
 		}
 		else if (A[i] == B[i])
 		{
-			result->num = '0' + result->num;
+			result.num = '0' + result.num;
 		}
 		else
 		{
 			char temporary = '0' + (A[i] - B[i]);
-			result->num = temporary + result->num;
+			result.num = temporary + result.num;
 		}
 	}
 
-	result->num = BigInteger::SubZero(result->num);
-	result->numLength = result->num.length();
+	result.num = BigInteger::SubZero(result.num);
+	result.numLength = result.num.length();
 	return result;
 }
 
@@ -139,9 +190,9 @@ BigInteger* BigInteger::_BaseSubtraction(BigInteger *minuend, BigInteger *meiosi
 输出：result
 status参照BigInteger::Compare()
 */
-int BigInteger::Addition(BigInteger *numA, BigInteger *numB, BigInteger *result)
+int BigInteger::Addition(BigInteger numA, BigInteger numB, BigInteger *result)
 {
-	if (numA == NULL || numB == NULL || result == NULL)
+	if (&numA == NULL || &numB == NULL || result == NULL)
 	{
 		return E_BIGINT_NPT;
 	}
@@ -153,7 +204,7 @@ int BigInteger::Addition(BigInteger *numA, BigInteger *numB, BigInteger *result)
 	{
 	case(0): {
 		result->setData(BigInteger::_BaseAddition(numA, numB));
-		if (numA->isNegative)
+		if (numA.isNegative)
 		{
 			result->isNegative = true;
 			result->numLength++;
@@ -168,45 +219,45 @@ int BigInteger::Addition(BigInteger *numA, BigInteger *numB, BigInteger *result)
 		result->numLength++;
 		break;
 	}case(11): {
-		if (!numA->isNegative && numB->isNegative)
+		if (!numA.isNegative && numB.isNegative)
 		{
 			result->setData(BigInteger::_BaseSubtraction(numA, numB));
 		}
-		else if(!numA->isNegative && !numB->isNegative)
+		else if(!numA.isNegative && !numB.isNegative)
 		{
 			result->setData(BigInteger::_BaseAddition(numA, numB));
 		}
 		break;
 	}case(12): {
-		if (numA->isNegative && numB->isNegative)
+		if (numA.isNegative && numB.isNegative)
 		{
 			result->setData(BigInteger::_BaseAddition(numA, numB));
 			result->isNegative = true;
 		}
-		else if (!numA->isNegative && numB->isNegative)
+		else if (!numA.isNegative && numB.isNegative)
 		{
 			result->setData(BigInteger::_BaseSubtraction(numB, numA));
 			result->isNegative = true;
 		}
 		break;
 	}case(21): {
-		if (numA->isNegative && numB->isNegative)
+		if (numA.isNegative && numB.isNegative)
 		{
 			result->setData(BigInteger::_BaseAddition(numA, numB));
 			result->isNegative = true;
 		}
-		else if (numA->isNegative && !numB->isNegative)
+		else if (numA.isNegative && !numB.isNegative)
 		{
 			result->setData(BigInteger::_BaseSubtraction(numA, numB));
 			result->isNegative = true;
 		}
 		break;
 	}case(22): {
-		if (!numA->isNegative && !numB->isNegative)
+		if (!numA.isNegative && !numB.isNegative)
 		{
 			result->setData(BigInteger::_BaseAddition(numA, numB));
 		}
-		else if (numA->isNegative && !numB->isNegative)
+		else if (numA.isNegative && !numB.isNegative)
 		{
 			result->setData(BigInteger::_BaseSubtraction(numB, numA));
 		}
@@ -223,9 +274,9 @@ int BigInteger::Addition(BigInteger *numA, BigInteger *numB, BigInteger *result)
 输出： result
 status参照BigInteger::Compare()
 */
-int BigInteger::Subtraction(BigInteger * numA, BigInteger * numB, BigInteger *result)
+int BigInteger::Subtraction(BigInteger numA, BigInteger numB, BigInteger *result)
 {
-	if (numA == NULL || numB == NULL || result == NULL)
+	if (&numA == NULL || &numB == NULL || result == NULL)
 	{
 		return E_BIGINT_NPT;
 	}
@@ -244,44 +295,44 @@ int BigInteger::Subtraction(BigInteger * numA, BigInteger * numB, BigInteger *re
 		result->isNegative = true;
 		break;
 	}case(11): {
-		if (!numA->isNegative && numB->isNegative)
+		if (!numA.isNegative && numB.isNegative)
 		{
 			result->setData(BigInteger::_BaseAddition(numA, numB));
 		}
-		else if (!numA->isNegative && !numB->isNegative)
+		else if (!numA.isNegative && !numB.isNegative)
 		{
 			result->setData(BigInteger::_BaseSubtraction(numA, numB));
 		}
 		break;
 	}case(12): {
-		if (numA->isNegative && numB->isNegative)
+		if (numA.isNegative && numB.isNegative)
 		{
 			result->setData(BigInteger::_BaseSubtraction(numB, numA));
 		}
-		else if (!numA->isNegative && numB->isNegative)
+		else if (!numA.isNegative && numB.isNegative)
 		{
 			result->setData(BigInteger::_BaseAddition(numA, numB));
 		}
 		break;
 	}case(21): {
-		if (numA->isNegative && numB->isNegative)
+		if (numA.isNegative && numB.isNegative)
 		{
 			result->setData(BigInteger::_BaseSubtraction(numA, numB));
 			result->isNegative = true;
 		}
-		else if (numA->isNegative && !numB->isNegative)
+		else if (numA.isNegative && !numB.isNegative)
 		{
 			result->setData(BigInteger::_BaseAddition(numA, numB));
 			result->isNegative = true;
 		}
 		break;
 	}case(22): {
-		if (!numA->isNegative && !numB->isNegative)
+		if (!numA.isNegative && !numB.isNegative)
 		{
 			result->setData(BigInteger::_BaseSubtraction(numB, numA));
 			result->isNegative = true;
 		}
-		else if (numA->isNegative && !numB->isNegative)
+		else if (numA.isNegative && !numB.isNegative)
 		{
 			result->setData(BigInteger::_BaseAddition(numA, numB));
 			result->isNegative = true;
@@ -299,15 +350,15 @@ int BigInteger::Subtraction(BigInteger * numA, BigInteger * numB, BigInteger *re
 	num： 单一整数
 输出：result
 */
-string BigInteger::_BaseMultiplication(BigInteger *numA, char num)
+string BigInteger::_BaseMultiplication(BigInteger numA, char num)
 {
 	string result = "";
-	string A = numA->AddZeroFront(1);
+	string A = numA.AddZeroFront(1);
 	int _num = num - '0';
 
 	int carry = 0; //进位
 
-	for (int i = numA->numLength; i >= 0; i--)
+	for (int i = numA.numLength; i >= 0; i--)
 	{
 		int temporary = (A[i] - '0') * _num;
 		if (temporary < 10)
@@ -338,31 +389,31 @@ string BigInteger::_BaseMultiplication(BigInteger *numA, char num)
 输入：两个整数A, B
 输出：result
 */
-int BigInteger::Multiplication(BigInteger *numA, BigInteger *numB, BigInteger *result)
+int BigInteger::Multiplication(BigInteger numA, BigInteger numB, BigInteger *result)
 {
-	if (numA == NULL || numB == NULL || result == NULL)
+	if (&numA == NULL || &numB == NULL || result == NULL)
 	{
 		return E_BIGINT_NPT;
 	}
 	result->setEmpty();
-	string A = numA->num;
-	string B = numB->num;
-	BigInteger *temporary = new BigInteger[numB->numLength];
+	string A = numA.num;
+	string B = numB.num;
+	BigInteger *temporary = new BigInteger[numB.numLength];
 
-	for (int i = 0, j = numB->numLength - 1; i < numB->numLength; i++, j--)
+	for (int i = 0, j = numB.numLength - 1; i < numB.numLength; i++, j--)
 	{
 		/**
 		*i: 记录temporary数组的下标，后补零个数 
 		*j: 记录numB中乘数的下标
 		*/
-		temporary[i] = BigInteger::_BaseMultiplication(numA, numB->num[j]);
+		temporary[i] = BigInteger::_BaseMultiplication(numA, numB.num[j]);
 		temporary[i] = BigInteger::AddZeroRear(&temporary[i], i);
 	}
-	for (int i = 0; i < numB->numLength; i++)
+	for (int i = 0; i < numB.numLength; i++)
 	{
-		result->setData(*result + temporary[i]);
+		result->setData((*result) + temporary[i]);//
 	}
-	if ((numA->isNegative && !numB->isNegative) || (!numA->isNegative && numB->isNegative))
+	if ((numA.isNegative && !numB.isNegative) || (!numA.isNegative && numB.isNegative))
 	{
 		result->isNegative = true;
 	}
@@ -374,25 +425,24 @@ int BigInteger::Multiplication(BigInteger *numA, BigInteger *numB, BigInteger *r
 输入： 大整数被除数， 除数
 输出： 运算结果result
 */
-int BigInteger::Division(BigInteger *dividend, BigInteger *divisor, BigInteger *Remainder, BigInteger *result)
+int BigInteger::Division(BigInteger dividend, BigInteger divisor, BigInteger *Remainder, BigInteger *result)
 {
-	if (dividend == NULL || divisor == NULL || Remainder == NULL || result == NULL)
+	if (&dividend == NULL || &divisor == NULL || Remainder == NULL || result == NULL)
 	{
 		return E_BIGINT_NPT;
 	}
-	if (divisor->num == "0")
+	if (divisor.num == "0")
 	{
 		return E_BIGINT_DBZ;
 	}
 	result->setEmpty();
 
-	BigInteger *A = new BigInteger;
-	BigInteger *B = new BigInteger;
-	A->setData(dividend);
-	B->setData(divisor);
+	BigInteger A, B;
+	A.setData(dividend);
+	B.setData(divisor);
 	Remainder->num = "0";
 
-	if (divisor->num == "1") //除数为1
+	if (divisor.num == "1") //除数为1
 	{
 		result->setData(dividend);
 		return E_BIGINT_OK;
@@ -416,18 +466,18 @@ int BigInteger::Division(BigInteger *dividend, BigInteger *divisor, BigInteger *
 		break;
 	}
 	case(11): {
-		BigInteger *temporary = new BigInteger;
-		BigInteger *_divisor = new BigInteger;
-		for (int i = 0; i < dividend->numLength; i++)
+		BigInteger temporary;
+		BigInteger _divisor;
+		for (int i = 0; i < dividend.numLength; i++)
 		{
-			temporary->num += dividend->num[i];
-			temporary->num = BigInteger::SubZero(temporary->num);
-			temporary->numLength = temporary->num.length();
+			temporary.num += dividend.num[i];
+			temporary.num = BigInteger::SubZero(temporary.num);
+			temporary.numLength = temporary.num.length();
 			int _status = BigInteger::Compare(temporary, divisor) % 10;
 			if (_status == 0)
 			{
-				temporary->num = BigInteger::_BaseMultiplication(temporary, '0');
-				temporary->numLength = 1;
+				temporary.num = BigInteger::_BaseMultiplication(temporary, '0');
+				temporary.numLength = 1;
 				result->num += '1';
 				result->numLength++;
 				Remainder->num = "0";
@@ -437,8 +487,8 @@ int BigInteger::Division(BigInteger *dividend, BigInteger *divisor, BigInteger *
 				char j = '1';
 				while(1)
 				{
-					_divisor->num = BigInteger::_BaseMultiplication(divisor, j);
-					_divisor->numLength = _divisor->num.length();
+					_divisor.num = BigInteger::_BaseMultiplication(divisor, j);
+					_divisor.numLength = _divisor.num.length();
 					if (BigInteger::Compare(temporary, _divisor) % 10 == 2)
 					{
 						j--;
@@ -446,12 +496,12 @@ int BigInteger::Division(BigInteger *dividend, BigInteger *divisor, BigInteger *
 					}
 					j++;
 				}
-				_divisor->num = BigInteger::_BaseMultiplication(divisor, j);
-				_divisor->numLength = _divisor->num.length();
+				_divisor.num = BigInteger::_BaseMultiplication(divisor, j);
+				_divisor.numLength = _divisor.num.length();
 				result->num += j;
 				result->numLength++;
-				temporary = *temporary - *_divisor;
-				Remainder->num = temporary->num;
+				temporary = temporary - _divisor;
+				Remainder->num = temporary.num;
 			}
 			else if (_status == 2)
 			{
@@ -461,18 +511,18 @@ int BigInteger::Division(BigInteger *dividend, BigInteger *divisor, BigInteger *
 		}
 		break;
 	}case(12): {
-		BigInteger *temporary = new BigInteger;
-		BigInteger *_divisor = new BigInteger;
-		for (int i = 0; i < dividend->numLength; i++)
+		BigInteger temporary;
+		BigInteger _divisor;
+		for (int i = 0; i < dividend.numLength; i++)
 		{
-			temporary->num += dividend->num[i];
-			temporary->num = BigInteger::SubZero(temporary->num);
-			temporary->numLength = temporary->num.length();
+			temporary.num += dividend.num[i];
+			temporary.num = BigInteger::SubZero(temporary.num);
+			temporary.numLength = temporary.num.length();
 			int _status = BigInteger::Compare(temporary, divisor) % 10;
 			if (_status == 0)
 			{
-				temporary->num = BigInteger::_BaseMultiplication(temporary, '0');
-				temporary->numLength = 1;
+				temporary.num = BigInteger::_BaseMultiplication(temporary, '0');
+				temporary.numLength = 1;
 				result->num += '1';
 				result->numLength++;
 				Remainder->num = "0";
@@ -482,8 +532,8 @@ int BigInteger::Division(BigInteger *dividend, BigInteger *divisor, BigInteger *
 				char j = '1';
 				while (1)
 				{
-					_divisor->num = BigInteger::_BaseMultiplication(divisor, j);
-					_divisor->numLength = _divisor->num.length();
+					_divisor.num = BigInteger::_BaseMultiplication(divisor, j);
+					_divisor.numLength = _divisor.num.length();
 					if (BigInteger::Compare(temporary, _divisor) % 10 == 2)
 					{
 						j--;
@@ -491,12 +541,12 @@ int BigInteger::Division(BigInteger *dividend, BigInteger *divisor, BigInteger *
 					}
 					j++;
 				}
-				_divisor->num = BigInteger::_BaseMultiplication(divisor, j);
-				_divisor->numLength = _divisor->num.length();
+				_divisor.num = BigInteger::_BaseMultiplication(divisor, j);
+				_divisor.numLength = _divisor.num.length();
 				result->num += j;
 				result->numLength++;
-				temporary = *temporary - *_divisor;
-				Remainder->num = temporary->num;
+				temporary = temporary - _divisor;
+				Remainder->num = temporary.num;
 			}
 			else if (_status == 2)
 			{
@@ -504,7 +554,7 @@ int BigInteger::Division(BigInteger *dividend, BigInteger *divisor, BigInteger *
 				result->numLength++;
 			}
 		}
-		if (!dividend->isNegative && divisor->isNegative)
+		if (!dividend.isNegative && divisor.isNegative)
 		{
 			result->isNegative = true;
 		}
@@ -512,14 +562,14 @@ int BigInteger::Division(BigInteger *dividend, BigInteger *divisor, BigInteger *
 	}case(21):
 	{
 		result->num = "0";
-		if (dividend->isNegative && !divisor->isNegative)
+		if (dividend.isNegative && !divisor.isNegative)
 		{
 			result->isNegative = true;
 		}
 		break;
 	}case(22): {
 		result->num = "0";
-		if (dividend->isNegative && !divisor->isNegative)
+		if (dividend.isNegative && !divisor.isNegative)
 		{
 			result->isNegative = true;
 		}
@@ -529,12 +579,46 @@ int BigInteger::Division(BigInteger *dividend, BigInteger *divisor, BigInteger *
 
 	result->num = BigInteger::SubZero(result->num);
 	result->numLength = result->num.length();
-	if ((dividend->isNegative && !divisor->isNegative) || (!dividend->isNegative && divisor->isNegative))
+	if ((dividend.isNegative && !divisor.isNegative) || (!dividend.isNegative && divisor.isNegative))
 	{
 		result->isNegative = true;
 	}
 	result->numLength = result->num.length();
 	return E_BIGINT_OK;
+}
+//按位与
+BigInteger BigInteger::AND_Big(BigInteger numA, BigInteger numB)
+{
+	if(numA.Bin == "")
+	numA.DecToBin();
+	if(numB.Bin == "")
+	numB.DecToBin();
+
+	BigInteger result;
+	string A(numA.Bin), B(numB.Bin);
+	if (A.length() < B.length())
+	{
+		A = BigInteger::AddZeroFront(A, B.length() - A.length());
+	}
+	else if (A.length() > B.length())
+	{
+		B = BigInteger::AddZeroFront(B, A.length() - B.length());
+	}
+
+	for (int i = A.length() - 1; i >= 0; i--)
+	{
+		if (A[i] == '1' && B[i] == '1')
+		{
+			result.Bin = "1" + result.Bin;
+		}
+		else
+		{
+			result.Bin = "0" + result.Bin;
+		}
+	}
+	result.BinToDec();
+	result.numLength = result.num.length();
+	return result;
 }
 
 /*
@@ -542,34 +626,53 @@ int BigInteger::Division(BigInteger *dividend, BigInteger *divisor, BigInteger *
 输入： 整数 numA， 幂 num
 输出： result
 */
-BigInteger * BigInteger::Power(BigInteger &numA, int num)
+BigInteger BigInteger::Power(BigInteger numA, int num)
 {
-	BigInteger *result = new BigInteger;
-	result->setEmpty();
+	BigInteger result;
+	result.setEmpty();
 
 	switch (num)
 	{
 	case(0): {
 		if (numA.num == "0")
 		{
-			result->isError = true;
+			result.isError = true;
 			return result;
 		}
-		result->num = "1";
-		result->numLength = 1;
+		result.num = "1";
+		result.numLength = 1;
 		break;
 	}case(1): {
-		result->setData(&numA);
+		result.setData(numA);
 		break;
 	}default: {
-		result->setData(&numA);
+		result.setData(numA);
 		for (int i = 1; i < num; i++)
 		{
-			result = (*result) * (numA);
+			result = (result * (numA));
 		}
 	}
 	}
 
+	return result;
+}
+
+BigInteger BigInteger::Power(BigInteger numA, BigInteger num)
+{
+	BigInteger result;
+
+	if (numA.num == "0" && num.num == "0")
+	{
+		result.isError = true;
+		return result;
+	}
+	result.num = "1";
+	while (num.num != "0")
+	{
+		result = result * numA;
+		num--;
+	}
+	result.numLength = result.num.length();
 	return result;
 }
 
@@ -647,53 +750,53 @@ std::string BigInteger::SubZero(string input)
 	2x： A的真值小于B
 所有可能状态：0, 11, 12, 21, 22, 10, 20
 */
-int BigInteger::Compare(BigInteger *numA, BigInteger *numB)
+int BigInteger::Compare(BigInteger numA, BigInteger numB)
 {
-	if (numA->numLength > numB->numLength) //A绝对值大于B
+	if (numA.numLength > numB.numLength) //A绝对值大于B
 	{
-		if ((numA->isNegative && numB->isNegative) || (numA->isNegative && !numB->isNegative)) {
+		if ((numA.isNegative && numB.isNegative) || (numA.isNegative && !numB.isNegative)) {
 			return 21;
 		}
-		else if ((!numA->isNegative && numB->isNegative) || (!numA->isNegative && !numB->isNegative)) {
+		else if ((!numA.isNegative && numB.isNegative) || (!numA.isNegative && !numB.isNegative)) {
 			return 11;
 		}
 	}
-	else if (numA->numLength < numB->numLength) //A绝对值小于B
+	else if (numA.numLength < numB.numLength) //A绝对值小于B
 	{
-		if ((numA->isNegative && numB->isNegative) || (!numA->isNegative && numB->isNegative)) {
+		if ((numA.isNegative && numB.isNegative) || (!numA.isNegative && numB.isNegative)) {
 			return 12;
 		}
-		else if ((!numA->isNegative && !numB->isNegative) || (numA->isNegative && !numB->isNegative)) {
+		else if ((!numA.isNegative && !numB.isNegative) || (numA.isNegative && !numB.isNegative)) {
 			return 22;
 		}
 	}
 	else {
-		for (int i = 0; i < numA->numLength; i++)
+		for (int i = 0; i < numA.numLength; i++)
 		{
-			if (numA->num[i] > numB->num[i]) //A绝对值大于B
+			if (numA.num[i] > numB.num[i]) //A绝对值大于B
 			{
-				if ((numA->isNegative && numB->isNegative) || (numA->isNegative && !numB->isNegative)) {
+				if ((numA.isNegative && numB.isNegative) || (numA.isNegative && !numB.isNegative)) {
 					return 21;
 				}
-				else if ((!numA->isNegative && numB->isNegative) || (!numA->isNegative && !numB->isNegative)) {
+				else if ((!numA.isNegative && numB.isNegative) || (!numA.isNegative && !numB.isNegative)) {
 					return 11;
 				}
 			}
-			else if (numA->num[i] < numB->num[i]) //A绝对值小于B
+			else if (numA.num[i] < numB.num[i]) //A绝对值小于B
 			{
-				if ((numA->isNegative && numB->isNegative) || (!numA->isNegative && numB->isNegative)) {
+				if ((numA.isNegative && numB.isNegative) || (!numA.isNegative && numB.isNegative)) {
 					return 12;
 				}
-				else if ((!numA->isNegative && !numB->isNegative) || (numA->isNegative && !numB->isNegative)) {
+				else if ((!numA.isNegative && !numB.isNegative) || (numA.isNegative && !numB.isNegative)) {
 					return 22;
 				}
 			}
 		}
-		if ((numA->isNegative && numB->isNegative) || (!numA->isNegative && !numB->isNegative))
+		if ((numA.isNegative && numB.isNegative) || (!numA.isNegative && !numB.isNegative))
 		{
 			return 0;
 		}
-		else if (numA->isNegative && !numB->isNegative)
+		else if (numA.isNegative && !numB.isNegative)
 		{
 			return 20;
 		}
@@ -704,7 +807,7 @@ int BigInteger::Compare(BigInteger *numA, BigInteger *numB)
 	}
 }
 //Mod
-BigInteger * BigInteger::Mod(BigInteger *numA, BigInteger *numB)
+BigInteger BigInteger::Mod(BigInteger numA, BigInteger numB)
 {
 	BigInteger *result = new BigInteger;
 	BigInteger *useless = new BigInteger;
@@ -725,78 +828,219 @@ BigInteger * BigInteger::Mod(BigInteger *numA, BigInteger *numB)
 	}
 	}
 	result->numLength = result->num.length();
-	return result;
+	return *result;
 }
 //最大公约数
-BigInteger * BigInteger::Gcd(BigInteger *numA, BigInteger *numB)
+BigInteger BigInteger::Gcd(BigInteger numA, BigInteger numB)
 {
-	BigInteger *result = new BigInteger;
-	BigInteger *swap = new BigInteger;
-	BigInteger *A = new BigInteger;
-	A->setData(numA);
-	BigInteger *B = new BigInteger;
-	B->setData(numB);
-	if (*A < *B)
+	BigInteger result;
+	BigInteger swap;
+	BigInteger A;
+	A.setData(numA);
+	BigInteger B;
+	B.setData(numB);
+	if (A < B)
 	{
-		swap->setData(A);
-		A->setData(B);
-		B->setData(swap);
+		swap.setData(A);
+		A.setData(B);
+		B.setData(swap);
 	}
 	while (1)
 	{
-		if (B->num == "0")
+		if (B.num == "0")
 		{
 			break;
 		}
-		swap->setData(BigInteger::Mod(A, B));
-		A->setData(B);
-		B->setData(swap);
+		swap.setData(BigInteger::Mod(A, B));
+		A.setData(B);
+		B.setData(swap);
 	}
-	result->setData(A);
+	result.setData(A);
 	return result;
 }
 
+BigInteger BigInteger::Random(BigInteger Down, BigInteger Up)
+{
+	BigInteger result;
+
+	if (Down >= Up)
+	{
+		result.isError = true;
+		return result;
+	}
+
+	LARGE_INTEGER nFrequency;
+	if (QueryPerformanceFrequency(&nFrequency))
+	{
+		LARGE_INTEGER nStartCounter;
+		QueryPerformanceCounter(&nStartCounter);
+		srand((unsigned)nStartCounter.LowPart);
+	}
+	char temporary;
+	while (result > Up || result < Down)
+	{
+		result.setEmpty();
+		int length = (rand() % (Up.numLength - Down.numLength + 1)) + Down.numLength;
+		for (int i = 0; i < length; i++)
+		{
+			temporary = '0' + rand() % 10;
+			result.num += temporary;
+		}
+		result.num = BigInteger::SubZero(result.num);
+		result.numLength = result.num.length();
+	}
+	result.numLength = result.num.length();
+	
+	return result;
+}
+
+//素性测试
+bool BigInteger::MR_algorithm(BigInteger num, int k, BigInteger q)
+{
+	BigInteger K(k);
+	BigInteger a = BigInteger::Random(BIG_TWO, num - BIG_TWO);
+	if (BigInteger::Mod(a * q, num) == BIG_ONE)
+	{
+		return true;
+	}
+	BigInteger temporary, result;
+	for (int j = 0; j <= k; j++)
+	{
+		temporary = BigInteger::Power(BIG_TWO, j) * q;
+		result = BigInteger::Mod(BigInteger::Power(a, temporary), num);
+		if ((result == (num - BIG_ONE)) || result == BIG_ONE)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+bool BigInteger::IsPrime(BigInteger input)
+{
+	if ((input % BIG_TWO) == BIG_ZERO)
+	{
+		return false;
+	}
+	int k = 0;
+	BigInteger q(input);
+	q--;
+	while ((q % BIG_TWO) == BIG_ZERO)
+	{
+		q = q / BIG_TWO;
+		k++;
+	}
+	bool result;
+	for (int i = 0; i < 3; i++)
+	{
+		result = BigInteger::MR_algorithm(input, k, q);
+		if (!result)
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+//重载= int赋值
+void BigInteger::operator=(int &num)
+{
+	if (num < 0)
+	{
+		this->isNegative = true;
+		num = 0 - num;
+	}
+	this->setEmpty();
+	char temporary;
+	while (num != 0)
+	{
+		temporary = '0' + (num % 10);
+		this->num = temporary + this->num;
+		num = num / 10;
+	}
+	this->num = SubZero(this->num);
+	this->numLength = this->num.length();
+
+}
+//重载++
+BigInteger BigInteger::operator++(int)
+{
+	*this = (*this) + BIG_ONE;
+	return *this;
+}
+BigInteger BigInteger::operator++()
+{
+	*this = (*this) + BIG_ONE;
+	return *this;
+}
+
+//重载--
+BigInteger BigInteger::operator--(int)
+{
+	*this = (*this) - BIG_ONE;
+	return *this;
+}
+BigInteger BigInteger::operator--()
+{
+	*this = (*this) - BIG_ONE;
+	return *this;
+}
+
+
 //重载+
-BigInteger* operator +(BigInteger& numA, BigInteger& numB)
+BigInteger operator +(BigInteger& numA, BigInteger& numB)
 {
 	BigInteger *result = new BigInteger;
-	if (BigInteger::Addition(&numA, &numB, result))
+	if (BigInteger::Addition(numA, numB, result))
 	{
-		return result;
+		return *result;
 	}
 }
 //重载-
-BigInteger * operator-(BigInteger &numA, BigInteger &numB)
+BigInteger  operator-(BigInteger &numA, BigInteger &numB)
 {
 	BigInteger *result = new BigInteger;
-	if (BigInteger::Subtraction(&numA, &numB, result))
+	if (BigInteger::Subtraction(numA, numB, result))
 	{
-		return result;
+		return *result;
 	}
 }
 //重载*
-BigInteger* operator *(BigInteger &numA, BigInteger &numB)
+BigInteger operator *(BigInteger &numA, BigInteger &numB)
 {
 	BigInteger *result = new BigInteger;
-	if (BigInteger::Multiplication(&numA, &numB, result))
+	if (BigInteger::Multiplication(numA, numB, result))
 	{
-		return result;
+		return *result;
 	}
 }
 //重载/
-BigInteger * operator /(BigInteger &numA, BigInteger &numB)
+BigInteger operator /(BigInteger &numA, BigInteger &numB)
 {
 	BigInteger *remainder = new BigInteger;
 	BigInteger *result = new BigInteger;
-	if (BigInteger::Division(&numA, &numB, remainder, result))
+	if (BigInteger::Division(numA, numB, remainder, result))
 	{
-		return result;
+		return *result;
 	}
+}
+//重载%
+BigInteger operator %(BigInteger &numA, BigInteger &numB)
+{
+	BigInteger result;
+	result = BigInteger::Mod(numA, numB);
+	return result;
+}
+BigInteger operator&(BigInteger &numA, BigInteger &numB)
+{
+	BigInteger result;
+	result = BigInteger::AND_Big(numA, numB);
+	return result;
 }
 //重载 <
 bool operator<(BigInteger &numA, BigInteger &numB)
 {
-	int status = BigInteger::Compare(&numA, &numB) / 10;
+	int status = BigInteger::Compare(numA, numB) / 10;
 	if (status == 2)
 	{
 		return true;
@@ -806,7 +1050,7 @@ bool operator<(BigInteger &numA, BigInteger &numB)
 //重载 <=
 bool operator<=(BigInteger &numA, BigInteger &numB)
 {
-	int status = BigInteger::Compare(&numA, &numB) / 10;
+	int status = BigInteger::Compare(numA, numB) / 10;
 	if (status == 2 || status == 0)
 	{
 		return true;
@@ -816,7 +1060,7 @@ bool operator<=(BigInteger &numA, BigInteger &numB)
 //重载 >
 bool operator>(BigInteger &numA, BigInteger &numB)
 {
-	int status = BigInteger::Compare(&numA, &numB) / 10;
+	int status = BigInteger::Compare(numA, numB) / 10;
 	if (status == 1)
 	{
 		return true;
@@ -826,7 +1070,7 @@ bool operator>(BigInteger &numA, BigInteger &numB)
 //重载 >=
 bool operator>=(BigInteger &numA, BigInteger &numB)
 {
-	int status = BigInteger::Compare(&numA, &numB) / 10;
+	int status = BigInteger::Compare(numA, numB) / 10;
 	if (status == 1 || status == 0)
 	{
 		return true;
@@ -836,14 +1080,22 @@ bool operator>=(BigInteger &numA, BigInteger &numB)
 //重载 ==
 bool operator==(BigInteger &numA, BigInteger &numB)
 {
-	int status = BigInteger::Compare(&numA, &numB);
+	int status = BigInteger::Compare(numA, numB);
 	if (status == 0)
 	{
 		return true;
 	}
 	return false;
 }
-
+//重载!=
+bool operator!=(BigInteger &numA, BigInteger &numB)
+{
+	if (BigInteger::Compare(numA, numB) != 0)
+	{
+		return true;
+	}
+	return false;
+}
 //重载 <<
 ostream & operator << (ostream &out, BigInteger &num)
 {

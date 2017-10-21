@@ -31,18 +31,19 @@ class BigInteger
 {
 public:
 
-	std::string num;             //原始字符串
-	int         numLength;	     //数值长度
-	bool        isNegative;      //负数判断
-	bool        isError = false; //错误判断，用于除数为0检测
-	int         conversion;      //进制
+	std::string num;                     //原始字符串(DEC)
+	int         numLength;	             //数值长度
+	bool        isNegative = false;      //负数判断
+	bool        isError = false;         //错误判断，用于除数为0检测
+	int         conversion;              //进制
+	std::string Bin;                     //原始字符串(BIN)
 	
 public:
 
 	/**
 	*@brief 默认构造函数
 	*/
-	BigInteger() { this->num = "0"; this->numLength = 1; this->isNegative = false; this->conversion = BIGINT_BIN; };
+	BigInteger() { this->num = "0"; this->numLength = 1; this->isNegative = false; this->conversion = BIGINT_DEC; this->Bin = ""; }
 
 	/**
 	*@brief 大整数的定义，赋值构造函数
@@ -51,16 +52,38 @@ public:
 	BigInteger(std::string);
 
 	/**
+	*@brief 大整数的定义，赋值构造函数
+	*@param i 整形常量，表示一个int整数
+	*/
+	BigInteger(int);
+
+	/**
 	*@brief 成员方法 复制函数
 	*@param BigInteger* 被复制的大整数
 	*/
-	void setData(BigInteger*);
+	void setData(BigInteger);
 
 	/**
 	*@brief 成员方法 对象置空
 	*@waring 此方法会将数据清除
 	*/
 	void setEmpty();
+
+	/********************
+	*进制转换
+	********************/
+
+	/**
+	*@brief 十进制转换为二进制 存放于成员Bin中
+	*@notice 前提是十进制有数
+	*/
+	void DecToBin();
+
+	/**
+	*@TODO 二进制转十进制
+	*/
+	void BinToDec();
+
 
 	/**
 	*@brief 基本加法
@@ -69,7 +92,7 @@ public:
 	*@return BigInteger*  运算结果
 	*@notice 仅支持两个正整数的加法
 	*/
-	BigInteger static * _BaseAddition(BigInteger*, BigInteger*);
+	BigInteger static _BaseAddition(BigInteger, BigInteger);
 
 	/**
 	*@brief 基本减法
@@ -78,7 +101,7 @@ public:
 	*@return BigInteger*  运算结果
 	*@notice 仅支持两个正数的减法，并且[被减数]大于[减数]
 	*/
-	BigInteger static * _BaseSubtraction(BigInteger *minuend, BigInteger *meiosis);
+	BigInteger static _BaseSubtraction(BigInteger minuend, BigInteger meiosis);
 
 	/**
 	*@brief 大整数加法运算
@@ -89,7 +112,7 @@ public:
 		E_BIGINT_OK  成功
 		E_BIGINT_NPT 空指针作为参数传递
 	*/
-	int static Addition(BigInteger*, BigInteger*, BigInteger*);
+	int static Addition(BigInteger, BigInteger, BigInteger*);
 
 	/**
 	*@brief 大整数减法运算
@@ -100,7 +123,7 @@ public:
 		E_BIGINT_OK  成功
 		E_BIGINT_NPT 空指针作为参数传递
 	*/
-	int static Subtraction(BigInteger*, BigInteger*, BigInteger*);
+	int static Subtraction(BigInteger, BigInteger, BigInteger*);
 	
 	/**
 	*@brief 基本乘法
@@ -109,7 +132,7 @@ public:
 	*@return   s           运算结果
 	*@notice 此方法仅限于任意正数乘10以内的数
 	*/
-	std::string static  _BaseMultiplication(BigInteger*, char);
+	std::string static  _BaseMultiplication(BigInteger, char);
 
 	/**
 	*@brief 大整数乘法运算
@@ -120,7 +143,7 @@ public:
 		E_BIGINT_OK  成功
 		E_BIGINT_NPT 空指针作为参数传递
 	*/
-	int static Multiplication(BigInteger*, BigInteger*, BigInteger*);
+	int static Multiplication(BigInteger, BigInteger, BigInteger*);
 
 	/**
 	*@brief 大整数除法运算
@@ -133,7 +156,12 @@ public:
 		E_BIGINT_NPT 空指针作为参数传递
 		E_BIGINT_DBZ 除数为零
 	*/
-	int static Division(BigInteger *dividend, BigInteger *divisor, BigInteger *Remainder, BigInteger*);
+	int static Division(BigInteger dividend, BigInteger divisor, BigInteger *Remainder, BigInteger*);
+
+	/**
+	*@TODO 按位与
+	*/
+	BigInteger static AND_Big(BigInteger, BigInteger);
 
 	/**
 	*@brief 大整数幂运算
@@ -141,8 +169,8 @@ public:
 	*@param[2] i           幂
 	*@return   BigInteger* 运算结果
 	*/
-	BigInteger static * Power(BigInteger&, int);
-
+	BigInteger static Power(BigInteger, int);
+	BigInteger static Power(BigInteger, BigInteger);
 
 	/**
 	*@brief    成员变量num前补零
@@ -190,7 +218,7 @@ public:
 		2x： A的真值小于B
 	*@notice 此方法对A和B的输入顺序有关
 	*/
-	int static Compare(BigInteger*, BigInteger*);
+	int static Compare(BigInteger, BigInteger);
 
 	/**
 	*@brief 两个大整数的求模运算
@@ -198,45 +226,71 @@ public:
 	*@param[2] BigInteger* 第二个整数
 	*@return   BigInteger* 两数求模的运算结果
 	*/
-	BigInteger static *Mod(BigInteger*, BigInteger*);
+	BigInteger static Mod(BigInteger, BigInteger);
 
 	/**
-	*@brief 求两数的最大公约数
-	*@param[0] BigInteger* 第一个数
-	*@param[1] BigInteger* 第二个数
+	*@brief 求两数的最大公约数（欧几里得算法）
+	*@param[1] BigInteger* 第一个数
+	*@param[2] BigInteger* 第二个数
 	*@return   BigInteger* 两数的最大公约数
 	*/
-	BigInteger static *Gcd(BigInteger*, BigInteger*);
-
-	/********************
-	*进制转换
-	********************/
+	BigInteger static Gcd(BigInteger, BigInteger);
 
 	/**
-	*@TODO 十进制转二进制
+	*@TODO 扩展欧几里得算法
 	*/
-	BigInteger DecToBin();
+	int static *XGcd(BigInteger, BigInteger, BigInteger*, BigInteger*);
 
+	/**
+	*@brief 在范围内生成随机数
+	*@param[1] BigInteger 范围下界
+	*@param[2] BigInteger 范围上界
+	*@return BigInteger 所生成的随机数
+	*@notice 仅提供正数的随机数生成
+	*/
+	BigInteger static Random(BigInteger, BigInteger);
+
+	/**
+	*@brief MR素性测试算法
+	*@param[1] BigInteger 需要判断的大整数
+	*@param[2] i          MR算法中的k
+	*@param[3] BigInteger MR算法中的q（奇数）
+	*@return b 
+		true: 不确定
+		false: 是一个合数
+	*/
+	bool static MR_algorithm(BigInteger, int, BigInteger);
+
+	/**
+	*@TODO 素性测试
+	*/
+	bool static IsPrime(BigInteger);
 
 	/********************
 	*各运算符和操作符的重载
 	********************/
 
-	friend BigInteger* operator +(BigInteger&, BigInteger&);
-	friend BigInteger* operator -(BigInteger&, BigInteger&);
-	friend BigInteger* operator *(BigInteger&, BigInteger&);
-	friend BigInteger* operator /(BigInteger&, BigInteger&);
+	void operator=(int &);
+	BigInteger operator++(int);
+	BigInteger operator++();
+	BigInteger operator--(int);
+	BigInteger operator--();
+	friend BigInteger operator +(BigInteger&, BigInteger&);
+	friend BigInteger operator -(BigInteger&, BigInteger&);
+	friend BigInteger operator *(BigInteger&, BigInteger&);
+	friend BigInteger operator /(BigInteger&, BigInteger&);
+	friend BigInteger operator %(BigInteger&, BigInteger&);
+	friend BigInteger operator &(BigInteger&, BigInteger&);
 	friend bool operator <(BigInteger&, BigInteger&);
 	friend bool operator <=(BigInteger&, BigInteger&);
 	friend bool operator >(BigInteger&, BigInteger&);
 	friend bool operator >=(BigInteger&, BigInteger&);
 	friend bool operator == (BigInteger&, BigInteger&);
-	friend std::ostream & operator << (std::ostream &out, BigInteger &num);
-    friend std::ostream & operator << (std::ostream &out, BigInteger *num);
+	friend bool operator != (BigInteger&, BigInteger&);
+	friend std::ostream & operator << (std::ostream &out, BigInteger &num);	
 	friend std::istream & operator >> (std::istream &in, BigInteger &num);
-	friend std::istream & operator >> (std::istream &in, BigInteger *num);
 
-};//class
+};//class BigInteger
 
 
 #endif // !_BIG_INT_H_

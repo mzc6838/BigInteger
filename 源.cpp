@@ -1,6 +1,10 @@
 #include <iostream>
 #include <string>
 #include "bigInt.h"
+#include "time.h"
+#include <windows.h>
+
+#define _ONE BigInteger(1)
 
 using namespace std;
 
@@ -82,10 +86,11 @@ int main()
 
 	//cout << endl << endl;
 
-	BigInteger A("4"), B("1024"), C("1");
-
-	cout << B / A << endl;
+	BigInteger A(9), B(13), C;
 	
+
+
+	cout << (A & B) << "\n";
  	system("pause");
 	return 0;
 }
