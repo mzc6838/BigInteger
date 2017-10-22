@@ -501,7 +501,7 @@ int BigInteger::Division(BigInteger dividend, BigInteger divisor, BigInteger *Re
 				result->num += j;
 				result->numLength++;
 				temporary = temporary - _divisor;
-				Remainder->num = temporary.num;
+				//Remainder->num = temporary.num;
 			}
 			else if (_status == 2)
 			{
@@ -546,7 +546,7 @@ int BigInteger::Division(BigInteger dividend, BigInteger divisor, BigInteger *Re
 				result->num += j;
 				result->numLength++;
 				temporary = temporary - _divisor;
-				Remainder->num = temporary.num;
+				//Remainder->num = temporary.num;
 			}
 			else if (_status == 2)
 			{
@@ -584,6 +584,8 @@ int BigInteger::Division(BigInteger dividend, BigInteger divisor, BigInteger *Re
 		result->isNegative = true;
 	}
 	result->numLength = result->num.length();
+
+	*Remainder = dividend - (*result * divisor);
 	return E_BIGINT_OK;
 }
 //按位与
@@ -628,51 +630,47 @@ BigInteger BigInteger::AND_Big(BigInteger numA, BigInteger numB)
 */
 BigInteger BigInteger::Power(BigInteger numA, int num)
 {
-	BigInteger result;
-	result.setEmpty();
+	BigInteger result(1);
 
-	switch (num)
-	{
-	case(0): {
-		if (numA.num == "0")
-		{
-			result.isError = true;
-			return result;
-		}
-		result.num = "1";
-		result.numLength = 1;
-		break;
-	}case(1): {
-		result.setData(numA);
-		break;
-	}default: {
-		result.setData(numA);
-		for (int i = 1; i < num; i++)
-		{
-			result = (result * (numA));
-		}
-	}
-	}
-
-	return result;
-}
-
-BigInteger BigInteger::Power(BigInteger numA, BigInteger num)
-{
-	BigInteger result;
-
-	if (numA.num == "0" && num.num == "0")
+	if (numA == BIG_ZERO && num == 0)
 	{
 		result.isError = true;
 		return result;
 	}
-	result.num = "1";
-	while (num.num != "0")
+
+	BigInteger base(numA);
+
+	while (num != 0)
 	{
-		result = result * numA;
-		num--;
+		if (num & 1)
+		{
+			result = result * base;
+		}
+		base = base * base;
+		num >>= 1;
 	}
-	result.numLength = result.num.length();
+	return result;
+}
+BigInteger BigInteger::Power(BigInteger numA, BigInteger num)
+{
+	if (numA == BIG_ZERO && num == BIG_ZERO)
+	{
+		BigInteger A;
+		A.isError = true;
+		return A;
+	}
+
+	BigInteger result(1), base(numA);
+
+	while (num != BIG_ZERO)
+	{
+		if ((num & BIG_ONE) == BIG_ONE)
+		{
+			result = result * base;
+		}
+		base = base * base;
+		num >>= 1;
+	}
 	return result;
 }
 
@@ -858,7 +856,7 @@ BigInteger BigInteger::Gcd(BigInteger numA, BigInteger numB)
 	result.setData(A);
 	return result;
 }
-
+//随机数
 BigInteger BigInteger::Random(BigInteger Down, BigInteger Up)
 {
 	BigInteger result;
@@ -896,26 +894,30 @@ BigInteger BigInteger::Random(BigInteger Down, BigInteger Up)
 
 //素性测试
 bool BigInteger::MR_algorithm(BigInteger num, int k, BigInteger q)
-{
-	BigInteger K(k);
-	BigInteger a = BigInteger::Random(BIG_TWO, num - BIG_TWO);
-	if (BigInteger::Mod(a * q, num) == BIG_ONE)
+{	
+	BigInteger
+		K(k),
+		num_1(num - BIG_ONE),
+		a(Random(BIG_TWO, num_1)),
+		b(Montgomery(a, q, num));
+	int e = 0;
+
+	if (b == BIG_ONE || b == num_1)
 	{
 		return true;
 	}
 	BigInteger temporary, result;
-	for (int j = 0; j <= k; j++)
+	while ((b != BIG_ONE || b != num_1) && e <= k - 1)
 	{
-		temporary = BigInteger::Power(BIG_TWO, j) * q;
-		result = BigInteger::Mod(BigInteger::Power(a, temporary), num);
-		if ((result == (num - BIG_ONE)) || result == BIG_ONE)
+		b = Power(b, 2) % num;
+		e++;
+		if (b == num_1 || b == BIG_ONE)
 		{
 			return true;
 		}
 	}
 	return false;
 }
-
 bool BigInteger::IsPrime(BigInteger input)
 {
 	if ((input % BIG_TWO) == BIG_ZERO)
@@ -931,7 +933,7 @@ bool BigInteger::IsPrime(BigInteger input)
 		k++;
 	}
 	bool result;
-	for (int i = 0; i < 3; i++)
+	for (int i = 0; i < 25; i++)
 	{
 		result = BigInteger::MR_algorithm(input, k, q);
 		if (!result)
@@ -940,6 +942,24 @@ bool BigInteger::IsPrime(BigInteger input)
 		}
 	}
 	return true;
+}
+//Montgomery算法 模幂运算
+BigInteger BigInteger::Montgomery(BigInteger base, BigInteger power, BigInteger modulus)
+{
+	BigInteger result(1), p(power), b(base);
+
+	while (p != BIG_ZERO)
+	{
+
+		while ((p & BIG_ONE) != BIG_ONE)
+		{
+			p >>= 1;
+			b = b * b % modulus;
+		}
+		p--;
+		result = b * result % modulus;
+	}
+	return result;
 }
 
 //重载= int赋值
@@ -966,11 +986,13 @@ void BigInteger::operator=(int &num)
 BigInteger BigInteger::operator++(int)
 {
 	*this = (*this) + BIG_ONE;
+	this->numLength = this->num.length();
 	return *this;
 }
 BigInteger BigInteger::operator++()
 {
 	*this = (*this) + BIG_ONE;
+	this->numLength = this->num.length();
 	return *this;
 }
 
@@ -978,11 +1000,13 @@ BigInteger BigInteger::operator++()
 BigInteger BigInteger::operator--(int)
 {
 	*this = (*this) - BIG_ONE;
+	this->numLength = this->num.length();
 	return *this;
 }
 BigInteger BigInteger::operator--()
 {
 	*this = (*this) - BIG_ONE;
+	this->numLength = this->num.length();
 	return *this;
 }
 
@@ -1036,6 +1060,39 @@ BigInteger operator&(BigInteger &numA, BigInteger &numB)
 	BigInteger result;
 	result = BigInteger::AND_Big(numA, numB);
 	return result;
+}
+//重载>>
+BigInteger operator >> (BigInteger &numA, int num)
+{
+
+	if (numA.Bin == "")
+	{
+		numA.DecToBin();
+	}
+	if (num >= numA.Bin.length())
+	{
+		return BigInteger(0);
+	}
+	BigInteger result(numA);
+	for (int i = 0; i < num; i++)
+	{
+		result = result / BIG_TWO;
+	}
+	result.DecToBin();
+	result.numLength = result.num.length();
+	return result;
+}
+//重载>>=
+BigInteger BigInteger::operator>>=(int num)
+{
+	BigInteger result;
+	result = *this >> num;
+	this->num = result.num;
+	this->Bin = result.Bin;
+	this->numLength = this->num.length();
+	this->isNegative = result.isNegative;
+	this->isError = result.isError;
+	return *this;
 }
 //重载 <
 bool operator<(BigInteger &numA, BigInteger &numB)
@@ -1150,6 +1207,7 @@ std::ostream & operator<<(std::ostream & out, BigInteger * num)
 std::istream & operator >> (std::istream &in, BigInteger &numA)
 {
 	string num = "";
+	cin >> num;
 	if (num[0] == '0' && (num[1] == 'x' || num[1] == 'X'))
 	{
 		numA.conversion = BIGINT_HEX;
@@ -1175,32 +1233,4 @@ std::istream & operator >> (std::istream &in, BigInteger &numA)
 	numA.numLength = numA.num.length();
 	return in;
 }
-//重载 >>
-std::istream & operator >> (std::istream & in, BigInteger * numA)
-{
-	string num = "";
-	if (num[0] == '0' && (num[1] == 'x' || num[1] == 'X'))
-	{
-		numA->conversion = BIGINT_HEX;
-		num.erase(0, 2);
-		numA->num = num;
-	}
-	else if (num[0] == '0' && num[1] == 'B')
-	{
-		numA->conversion = BIGINT_BIN;
-		num.erase(0, 2);
-		numA->num = num;
-	}
-	else
-	{
-		if (num[0] == '-')
-		{
-			numA->isNegative = true;
-			num.erase(0, 1);
-		}
-		numA->num = num;
-	}
-	numA->num = BigInteger::SubZero(num);
-	numA->numLength = numA->num.length();
-	return in;
-}
+

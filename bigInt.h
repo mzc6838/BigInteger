@@ -58,6 +58,11 @@ public:
 	BigInteger(int);
 
 	/**
+	*@brief 析构函数
+	*/
+	~BigInteger() {};
+
+	/**
 	*@brief 成员方法 复制函数
 	*@param BigInteger* 被复制的大整数
 	*/
@@ -84,6 +89,9 @@ public:
 	*/
 	void BinToDec();
 
+	/******************
+	******静态函数******
+	*******************/
 
 	/**
 	*@brief 基本加法
@@ -92,7 +100,7 @@ public:
 	*@return BigInteger*  运算结果
 	*@notice 仅支持两个正整数的加法
 	*/
-	BigInteger static _BaseAddition(BigInteger, BigInteger);
+	inline BigInteger static _BaseAddition(BigInteger, BigInteger);
 
 	/**
 	*@brief 基本减法
@@ -101,7 +109,7 @@ public:
 	*@return BigInteger*  运算结果
 	*@notice 仅支持两个正数的减法，并且[被减数]大于[减数]
 	*/
-	BigInteger static _BaseSubtraction(BigInteger minuend, BigInteger meiosis);
+	inline BigInteger static _BaseSubtraction(BigInteger minuend, BigInteger meiosis);
 
 	/**
 	*@brief 大整数加法运算
@@ -132,7 +140,7 @@ public:
 	*@return   s           运算结果
 	*@notice 此方法仅限于任意正数乘10以内的数
 	*/
-	std::string static  _BaseMultiplication(BigInteger, char);
+	inline std::string static  _BaseMultiplication(BigInteger, char);
 
 	/**
 	*@brief 大整数乘法运算
@@ -163,11 +171,12 @@ public:
 	*/
 	BigInteger static AND_Big(BigInteger, BigInteger);
 
+
 	/**
 	*@brief 大整数幂运算
-	*@param[1] BigInteger* 底数
-	*@param[2] i           幂
-	*@return   BigInteger* 运算结果
+	*@param[1] BigInteger     底数
+	*@param[2] i / BigInteger 幂
+	*@return   BigInteger     运算结果
 	*/
 	BigInteger static Power(BigInteger, int);
 	BigInteger static Power(BigInteger, BigInteger);
@@ -178,7 +187,7 @@ public:
 	*@return s 补零后的字符串
 	*@notice   此方法不会对数值造成影响
 	*/
-	std::string AddZeroFront(int); 
+	inline std::string AddZeroFront(int); 
 
 	/**
 	*@brief static 前补零
@@ -187,7 +196,7 @@ public:
 	*@return s 返回补零后的字符串代表整数
 	*@notice 此方法不会对数值造成影响
 	*/
-	std::string static AddZeroFront(std::string, int);
+	inline std::string static AddZeroFront(std::string, int);
 
 	/**
 	*@brief static 后补零
@@ -196,14 +205,14 @@ public:
 	*@return BigInteger 返回补零之后的大整数
 	*@warning 此方法势必会改变数值大小
 	*/
-	BigInteger static AddZeroRear(BigInteger*, int);
+	inline BigInteger static AddZeroRear(BigInteger*, int);
 
 	/**
 	*@brief 消去任意字符串前的0
 	*@param s 需要被处理的字符串
 	*@return s 处理过的字符串
 	*/
-	std::string static SubZero(std::string);
+	inline std::string static SubZero(std::string);
 
 	/**
 	*@brief 对两个大整数进行真值以及绝对值的比较
@@ -218,7 +227,7 @@ public:
 		2x： A的真值小于B
 	*@notice 此方法对A和B的输入顺序有关
 	*/
-	int static Compare(BigInteger, BigInteger);
+	inline int static Compare(BigInteger, BigInteger);
 
 	/**
 	*@brief 两个大整数的求模运算
@@ -266,15 +275,22 @@ public:
 	*/
 	bool static IsPrime(BigInteger);
 
+	/**
+	*@TODO Montgomery模幂运算
+	*/
+	inline BigInteger static Montgomery(BigInteger, BigInteger, BigInteger);
+
 	/********************
 	*各运算符和操作符的重载
 	********************/
 
 	void operator=(int &);
-	BigInteger operator++(int);
+	BigInteger operator++(int);//后缀
 	BigInteger operator++();
-	BigInteger operator--(int);
+	BigInteger operator--(int);//后缀
 	BigInteger operator--();
+	friend BigInteger operator >> (BigInteger&, int);
+	BigInteger operator >>= (int);
 	friend BigInteger operator +(BigInteger&, BigInteger&);
 	friend BigInteger operator -(BigInteger&, BigInteger&);
 	friend BigInteger operator *(BigInteger&, BigInteger&);

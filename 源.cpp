@@ -86,11 +86,17 @@ int main()
 
 	//cout << endl << endl;
 
-	BigInteger A(9), B(13), C;
-	
+	BigInteger A(2), B(5), C;
 
-
-	cout << (A & B) << "\n";
+	for (int i = 0; i < 100; i++)
+	{
+		cin >> A;
+		auto start = clock();
+		cout << BigInteger::IsPrime(A) << "  ";
+		auto end = clock();
+		cout << end - start << endl;
+	}
+	//2152302898747
  	system("pause");
 	return 0;
 }
