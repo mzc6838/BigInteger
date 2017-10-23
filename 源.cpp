@@ -4,9 +4,9 @@
 #include "time.h"
 #include <windows.h>
 
-#define _ONE BigInteger(1)
-
 using namespace std;
+
+//using namespace BigInteger;
 
 int main()
 {

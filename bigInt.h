@@ -22,6 +22,13 @@
 #define BIGINT_HEX 3 //16进制
 
 /**
+*三个特殊的数
+*/
+#define BIG_ZERO BigInteger(0)
+#define BIG_ONE BigInteger(1)
+#define BIG_TWO BigInteger(2)
+
+/**
 *@class  BigInteger  \bigInt.h
 *@author mzc6838
 *@brief  提供大整数的生成，表示，运算功能
@@ -66,13 +73,13 @@ public:
 	*@brief 成员方法 复制函数
 	*@param BigInteger* 被复制的大整数
 	*/
-	void setData(BigInteger);
+	inline void setData(BigInteger);
 
 	/**
 	*@brief 成员方法 对象置空
 	*@waring 此方法会将数据清除
 	*/
-	void setEmpty();
+	inline void setEmpty();
 
 	/********************
 	*进制转换
@@ -82,12 +89,12 @@ public:
 	*@brief 十进制转换为二进制 存放于成员Bin中
 	*@notice 前提是十进制有数
 	*/
-	void DecToBin();
+	inline void DecToBin();
 
 	/**
 	*@TODO 二进制转十进制
 	*/
-	void BinToDec();
+	inline void BinToDec();
 
 	/******************
 	******静态函数******
