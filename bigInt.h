@@ -87,12 +87,13 @@ public:
 
 	/**
 	*@brief 十进制转换为二进制 存放于成员Bin中
-	*@notice 前提是十进制有数
+	*@notice 前提是十进制不为空
 	*/
 	inline void DecToBin();
 
 	/**
-	*@TODO 二进制转十进制
+	*@brief 二进制转十进制 存放于成员num中
+	*@notice 前提是二进制不为空
 	*/
 	inline void BinToDec();
 
@@ -171,10 +172,13 @@ public:
 		E_BIGINT_NPT 空指针作为参数传递
 		E_BIGINT_DBZ 除数为零
 	*/
-	int static Division(BigInteger dividend, BigInteger divisor, BigInteger *Remainder, BigInteger*);
+	int static Division(BigInteger dividend, BigInteger divisor, BigInteger *Remainder, BigInteger *result);
 
 	/**
-	*@TODO 按位与
+	*@brief 按位与
+	*@param[1] BigInteger 第一个整数
+	*@param[2] BigInteger 第二个整数
+	*@return BigInteger 按位与的结果
 	*/
 	BigInteger static AND_Big(BigInteger, BigInteger);
 
@@ -253,9 +257,25 @@ public:
 	BigInteger static Gcd(BigInteger, BigInteger);
 
 	/**
-	*@TODO 扩展欧几里得算法
+	*@brief 扩展欧几里得算法 gcd(numA, numB) = u * numA + v * numB
+	*@param[1] BigInteger 参与运算的第一个数
+	*@param[2] BigInteger 参与运算的第二个数
+	*@param[3] BigInteger* 存放u
+	*@param[4] BigInteger* 存放v
+	*@return BigInteger 两数的最大公约数
 	*/
-	int static *XGcd(BigInteger, BigInteger, BigInteger*, BigInteger*);
+	BigInteger static XGcd(BigInteger numA, BigInteger numB, BigInteger *u, BigInteger *v);
+
+	/**
+	*@brief 求乘法逆
+	*@param[1] BigInteger 原数
+	*@param[2] BigInteger 模数
+	*@param[3] BigInteger* 结果
+	*@return
+		0: 表明原数模数不互素 result返回两数最大公约数
+		1: 表明原数模数互素 result返回num关于1模n的乘法逆元
+	*/
+	int static Inverse(BigInteger num, BigInteger n, BigInteger *result);
 
 	/**
 	*@brief 在范围内生成随机数
@@ -278,20 +298,37 @@ public:
 	bool static MR_algorithm(BigInteger, int, BigInteger);
 
 	/**
-	*@TODO 素性测试
+	*@brief 素性测试
+	*@param 待测试整数
+	*@return 
+		true: 有大概率待测数据是一个素数
+		false: 待测数据是一个合数
 	*/
 	bool static IsPrime(BigInteger);
 
 	/**
-	*@TODO Montgomery模幂运算
+	*@brief Montgomery模幂运算
+	*@param[1] BigInteger 底数
+	*@param[2] BigInteger 指数
+	*@param[3] BigInteger 模数
+	*@return BigInteger 返回 a^b mod c 的值
 	*/
 	inline BigInteger static Montgomery(BigInteger, BigInteger, BigInteger);
+
+	/**
+	*@brief 欧拉函数(由两个素数决定)
+	*@param[1] BigInteger 第一个素数
+	*@param[2] BigInteger 第二个素数
+	*@notice 不是用模数方式产生，两数一定要都是素数
+	*/
+	BigInteger static Euler(BigInteger, BigInteger);
 
 	/********************
 	*各运算符和操作符的重载
 	********************/
 
 	void operator=(int &);
+	void operator=(BigInteger &);
 	BigInteger operator++(int);//后缀
 	BigInteger operator++();
 	BigInteger operator--(int);//后缀

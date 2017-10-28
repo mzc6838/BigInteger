@@ -86,17 +86,20 @@ int main()
 
 	//cout << endl << endl;
 
-	BigInteger A(2), B(5), C;
+	BigInteger A, B(288), u, v;
 
-	for (int i = 0; i < 100; i++)
-	{
-		cin >> A;
-		auto start = clock();
-		cout << BigInteger::IsPrime(A) << "  ";
-		auto end = clock();
-		cout << end - start << endl;
-	}
+	//for (int i = 0; i < 100; i++)
+	//{
+	//	cin >> A;
+	//	auto start = clock();
+	//	cout << BigInteger::IsPrime(A) << "  ";
+	//	auto end = clock();
+	//	cout << end - start << endl;
+	//}
 	//2152302898747
+
+	cout << BigInteger::Inverse(7, 60, &A) << endl << A << endl;
+
  	system("pause");
 	return 0;
 }

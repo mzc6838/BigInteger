@@ -402,7 +402,7 @@ int BigInteger::Multiplication(BigInteger numA, BigInteger numB, BigInteger *res
 		*i: 记录temporary数组的下标，后补零个数 
 		*j: 记录numB中乘数的下标
 		*/
-		temporary[i] = _BaseMultiplication(numA, numB.num[j]);
+		temporary[i].num = _BaseMultiplication(numA, numB.num[j]);
 		temporary[i] = AddZeroRear(&temporary[i], i);
 	}
 	for (int i = 0; i < numB.numLength; i++)
@@ -580,6 +580,7 @@ int BigInteger::Division(BigInteger dividend, BigInteger divisor, BigInteger *Re
 	result->numLength = result->num.length();
 
 	*Remainder = dividend - (*result * divisor);
+	Remainder->numLength = Remainder->num.length();
 	return E_BIGINT_OK;
 }
 //按位与
@@ -850,6 +851,53 @@ BigInteger BigInteger::Gcd(BigInteger numA, BigInteger numB)
 	result.setData(A);
 	return result;
 }
+//扩展欧几里得
+BigInteger BigInteger::XGcd(BigInteger numA, BigInteger numB, BigInteger *u, BigInteger *v)
+{
+	BigInteger result;
+	u->setData(BIG_ONE);
+	result.setData(numA);
+
+	if (numB == BIG_ZERO)
+	{
+		v->setData(BIG_ZERO);
+		return result;
+	}
+
+	BigInteger v1(0), v3(numB), t3, q, t1;
+	do {
+		Division(result, v3, &t3, &q);
+		result = q * v3 + t3;
+		t1 = *u - q * v1;
+		*u = v1;
+		result = v3;
+		v1 = t1;
+		v3 = t3;
+	} while (v3 != BIG_ZERO);
+	*v = (result - *u * numA) / numB;
+
+	return result;
+}
+//TODO 乘法逆元
+int BigInteger::Inverse(BigInteger num, BigInteger n,BigInteger *result)
+{
+	BigInteger u, v, temporary;
+	temporary = XGcd(num, n, &u, &v);
+	if (temporary != BIG_ONE) // 不互素
+	{
+		result->setData(temporary);
+		return 0;
+	}
+	else//互素
+	{
+		while (u < BIG_ZERO)
+		{
+			u = u + n;
+		}
+		result->setData(u);
+		return 1;
+	}
+}
 //随机数
 BigInteger BigInteger::Random(BigInteger Down, BigInteger Up)
 {
@@ -959,6 +1007,11 @@ BigInteger BigInteger::Montgomery(BigInteger base, BigInteger power, BigInteger 
 	}
 	return result;
 }
+//欧拉函数
+BigInteger BigInteger::Euler(BigInteger numA, BigInteger numB)
+{
+	return (numA - BIG_ONE) * (numB - BIG_ONE);
+}
 
 //重载= int赋值
 void BigInteger::operator=(int &num)
@@ -979,6 +1032,11 @@ void BigInteger::operator=(int &num)
 	this->num = SubZero(this->num);
 	this->numLength = this->num.length();
 
+}
+//重载=
+void BigInteger::operator=(BigInteger &_num)
+{
+	this->setData(_num);
 }
 //重载++
 BigInteger BigInteger::operator++(int)
