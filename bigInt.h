@@ -29,6 +29,11 @@
 #define BIG_TWO BigInteger(2)
 
 /**
+*GLOBAL全局变量
+*/
+extern int *G_primeIn65536;
+
+/**
 *@class  BigInteger  \bigInt.h
 *@author mzc6838
 *@brief  提供大整数的生成，表示，运算功能
@@ -47,10 +52,19 @@ public:
 	
 public:
 
+	///////////////////////////////////////
+	//成员方法
+
 	/**
 	*@brief 默认构造函数
 	*/
-	BigInteger() { this->num = "0"; this->numLength = 1; this->isNegative = false; this->conversion = BIGINT_DEC; this->Bin = ""; }
+	BigInteger() { 
+		this->num = "0"; 
+		this->numLength = 1; 
+		this->isNegative = false; 
+		this->conversion = BIGINT_DEC; 
+		this->Bin = ""; 
+	}
 
 	/**
 	*@brief 大整数的定义，赋值构造函数
@@ -65,18 +79,23 @@ public:
 	BigInteger(int);
 
 	/**
+	@TODO 字符构造函数
+	*/
+	BigInteger(char);
+
+	/**
 	*@brief 析构函数
 	*/
 	~BigInteger() {};
 
 	/**
-	*@brief 成员方法 复制函数
+	*@brief 复制函数
 	*@param BigInteger* 被复制的大整数
 	*/
 	inline void setData(BigInteger);
 
 	/**
-	*@brief 成员方法 对象置空
+	*@brief 对象置空
 	*@waring 此方法会将数据清除
 	*/
 	inline void setEmpty();
@@ -90,16 +109,23 @@ public:
 	*@notice 前提是十进制不为空
 	*/
 	inline void DecToBin();
+	inline static void DecToBin(BigInteger&);
 
 	/**
 	*@brief 二进制转十进制 存放于成员num中
 	*@notice 前提是二进制不为空
 	*/
 	inline void BinToDec();
+	inline static void BinToDec(BigInteger&);
 
-	/******************
-	******静态函数******
-	*******************/
+	/**
+	*@TODO 判断是否是偶数
+	*/
+	inline bool IsEven();
+
+
+	/////////////////////////////////////////////////////////////////////
+	//静态函数
 
 	/**
 	*@brief 基本加法
@@ -193,6 +219,11 @@ public:
 	BigInteger static Power(BigInteger, BigInteger);
 
 	/**
+	*@TODO 平方运算
+	*/
+	BigInteger static Sqr(BigInteger);
+
+	/**
 	*@brief    成员变量num前补零
 	*@param  i 补零个数
 	*@return s 补零后的字符串
@@ -217,6 +248,7 @@ public:
 	*@warning 此方法势必会改变数值大小
 	*/
 	inline BigInteger static AddZeroRear(BigInteger*, int);
+	inline void AddZeroRear(int);
 
 	/**
 	*@brief 消去任意字符串前的0
@@ -303,6 +335,7 @@ public:
 	*@return 
 		true: 有大概率待测数据是一个素数
 		false: 待测数据是一个合数
+	*@warning 使用此方法前务必调用一次G_CreatePrimeList()
 	*/
 	bool static IsPrime(BigInteger);
 
@@ -313,7 +346,32 @@ public:
 	*@param[3] BigInteger 模数
 	*@return BigInteger 返回 a^b mod c 的值
 	*/
-	inline BigInteger static Montgomery(BigInteger, BigInteger, BigInteger);
+	inline BigInteger static MontgomeryPower(BigInteger, BigInteger, BigInteger);
+
+	/**
+	*@TODO Montgomery乘积 a * b mod modulus
+	*/
+	BigInteger static MontgomeryX(BigInteger numA, BigInteger numB, BigInteger modulus);
+
+	/**
+	*@TODO Montgomery约简
+	*/
+	inline BigInteger static MontgomerySimple(int s, BigInteger n);
+
+	/**
+	*@TODO 负乘法逆
+	*/
+	inline BigInteger static NegativeInv(int s, BigInteger n);
+
+	/**
+	*@TODO 对2^N求模
+	*/
+	inline BigInteger static Mod_Bin(BigInteger, int);
+
+	/**
+	*TODO 某二进制减1 string
+	*/
+	inline std::string static BinSubOne(std::string);
 
 	/**
 	*@brief 欧拉函数(由两个素数决定)
@@ -352,6 +410,11 @@ public:
 
 };//class BigInteger
 
+//GLOBAL函数
+/**
+*@brief 产生65536以内的素数表
+*/
+void G_CreatePrimeList();
 
 #endif // !_BIG_INT_H_
 

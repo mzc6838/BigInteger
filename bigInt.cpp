@@ -4,6 +4,11 @@
 #include <math.h>
 using namespace std;
 
+/**
+*GLOBAL
+*/
+int *G_primeIn65536 = new int[6543];
+
 //构造函数
 BigInteger::BigInteger(string num)
 {
@@ -32,6 +37,7 @@ BigInteger::BigInteger(string num)
 	}
 	this->num = SubZero(num);
 	this->numLength = this->num.length();
+	//DecToBin(*this);
 }
 
 BigInteger::BigInteger(int num)
@@ -51,6 +57,16 @@ BigInteger::BigInteger(int num)
 	}
 	this->num = SubZero(this->num);
 	this->numLength = this->num.length();
+	//this->DecToBin();
+}
+
+BigInteger::BigInteger(char c)
+{
+	string a(&c);
+	this->num = a;
+	this->numLength = this->num.length();
+	this->isNegative = false;
+	this->isError = false;
 }
 
 //复制
@@ -60,7 +76,7 @@ void BigInteger::setData(BigInteger input)
 	this->isNegative = input.isNegative;
 	this->isError = input.isError;
 	this->numLength = input.numLength;
-	this->conversion = input.conversion;
+	//this->conversion = input.conversion;
 }
 
 //置空
@@ -72,18 +88,30 @@ void BigInteger::setEmpty()
 }
 
 //转二进制
-void BigInteger::DecToBin()
+inline void BigInteger::DecToBin()
 {
+	this->Bin = "";
 	BigInteger NUM(this->num);
 	BigInteger reminder;
 	while (NUM != BIG_ZERO)
 	{
-		this->Bin = (NUM % BIG_TWO).num + this->Bin;
-		NUM = NUM / BIG_TWO;
+		Division(NUM, BIG_TWO, &reminder, &NUM);
+		this->Bin = reminder.num + this->Bin;
+	}
+}
+inline void BigInteger::DecToBin(BigInteger &num)
+{
+	num.Bin = "";
+	BigInteger NUM(num.num);
+	BigInteger reminder;
+	while (NUM != BIG_ZERO)
+	{
+		Division(NUM, BIG_TWO, &reminder, &NUM);
+		num.Bin = reminder.num + num.Bin;
 	}
 }
 //转十进制
-void BigInteger::BinToDec()
+inline void BigInteger::BinToDec()
 {
 	BigInteger temporary;
 	for (int i = this->Bin.length() - 1, j = 0; i >= 0; i--, j++)
@@ -94,6 +122,33 @@ void BigInteger::BinToDec()
 		}
 	}
 	this->num = temporary.num;
+	this->numLength = this->num.length();
+}
+inline void BigInteger::BinToDec(BigInteger &num)
+{
+	BigInteger temporary;
+	for (int i = num.Bin.length() - 1, j = 0; i >= 0; i--, j++)
+	{
+		if (num.Bin[i] == '1')
+		{
+			temporary = temporary + Power(BIG_TWO, j);
+		}
+	}
+	num.num = temporary.num;
+	num.numLength = num.num.length();
+}
+//偶数判断
+inline bool BigInteger::IsEven()
+{
+	if (this->num[this->num.length() - 1] == '0' ||
+		this->num[this->num.length() - 1] == '2' ||
+		this->num[this->num.length() - 1] == '4' ||
+		this->num[this->num.length() - 1] == '6' ||
+		this->num[this->num.length() - 1] == '8')
+	{
+		return true;
+	}
+	return false;
 }
 
 /*
@@ -101,7 +156,7 @@ void BigInteger::BinToDec()
 输入： 两个正数A， B
 return： 运算结果
 */
-BigInteger BigInteger::_BaseAddition(BigInteger numA, BigInteger numB)
+inline BigInteger BigInteger::_BaseAddition(BigInteger numA, BigInteger numB)
 {
 	string A = numA.num;
 	string B = numB.num;
@@ -123,11 +178,12 @@ BigInteger BigInteger::_BaseAddition(BigInteger numA, BigInteger numB)
 		B = numB.AddZeroFront(1);
 	}
 
+	char sum;
 	for (int i = A.length() - 1; i >= 0; i--)
 	{
 		if (A[i] - '0' + B[i] - '0' > 9)
 		{
-			char sum = A[i] - '0' + B[i] - '0' - 10 + '0';
+			sum = A[i] - '0' + B[i] - '0' - 10 + '0';
 			result.num = sum + result.num;
 			A[i - 1]++;
 		}
@@ -148,7 +204,7 @@ return： 运算结果
 
 可用负号变换减法次序
 */
-BigInteger BigInteger::_BaseSubtraction(BigInteger minuend, BigInteger meiosis)
+inline BigInteger BigInteger::_BaseSubtraction(BigInteger minuend, BigInteger meiosis)
 {
 	//minuend > meiosis
 	string A = minuend.num;
@@ -260,7 +316,7 @@ int BigInteger::Addition(BigInteger numA, BigInteger numB, BigInteger *result)
 		break;
 	}
 	}
-
+	//result->DecToBin();
 	return E_BIGINT_OK;
 }
 
@@ -336,6 +392,7 @@ int BigInteger::Subtraction(BigInteger numA, BigInteger numB, BigInteger *result
 		break;
 	}
 	}
+	//result->DecToBin();
 	return E_BIGINT_OK;
 }
 
@@ -346,7 +403,7 @@ int BigInteger::Subtraction(BigInteger numA, BigInteger numB, BigInteger *result
 	num： 单一整数
 输出：result
 */
-string BigInteger::_BaseMultiplication(BigInteger numA, char num)
+inline string BigInteger::_BaseMultiplication(BigInteger numA, char num)
 {
 	string result = "";
 	string A = numA.AddZeroFront(1);
@@ -414,6 +471,7 @@ int BigInteger::Multiplication(BigInteger numA, BigInteger numB, BigInteger *res
 		result->isNegative = true;
 	}
 	delete[] temporary;
+	//result->DecToBin();
 	return E_BIGINT_OK;
 }
 
@@ -434,11 +492,12 @@ int BigInteger::Division(BigInteger dividend, BigInteger divisor, BigInteger *Re
 	}
 	result->setEmpty();
 	BigInteger A(dividend), B(divisor);
-	Remainder->num = "0";
+	//Remainder->setEmpty();
 
 	if (divisor.num == "1") //除数为1
 	{
 		result->setData(dividend);
+		Remainder ->setData(BIG_ZERO);
 		return E_BIGINT_OK;
 	}
 
@@ -460,100 +519,69 @@ int BigInteger::Division(BigInteger dividend, BigInteger divisor, BigInteger *Re
 		break;
 	}
 	case(11): {
-		BigInteger temporary;
-		BigInteger _divisor;
-		for (int i = 0; i < dividend.numLength; i++)
+		A.isNegative = false;
+		B.isNegative = false;
+
+		int l = A.numLength - B.numLength, count;
+		BigInteger temp;
+		for (; l >= 0; l--)
 		{
-			temporary.num += dividend.num[i];
-			temporary.num = SubZero(temporary.num);
-			temporary.numLength = temporary.num.length();
-			int _status = Compare(temporary, divisor) % 10;
-			if (_status == 0)
+			count = 1;
+			B.AddZeroRear(l);
+			do
 			{
-				temporary.num = _BaseMultiplication(temporary, '0');
-				temporary.numLength = 1;
-				result->num += '1';
-				result->numLength++;
-				Remainder->num = "0";
-			}
-			else if (_status == 1)
-			{
-				char j = '1';
-				while(1)
+				temp = A - BigInteger(count) * B;
+				if (temp == BIG_ZERO)
 				{
-					_divisor.num = _BaseMultiplication(divisor, j);
-					_divisor.numLength = _divisor.num.length();
-					if (Compare(temporary, _divisor) % 10 == 2)
-					{
-						j--;
-						break;
-					}
-					j++;
+					result->num += to_string(count);
+					result->AddZeroRear(result, l);
+					Remainder->setData(BIG_ZERO);
+					return E_BIGINT_OK;
 				}
-				_divisor.num = _BaseMultiplication(divisor, j);
-				_divisor.numLength = _divisor.num.length();
-				result->num += j;
-				result->numLength++;
-				temporary = temporary - _divisor;
-				//Remainder->num = temporary.num;
-			}
-			else if (_status == 2)
-			{
-				result->num += '0';
-				result->numLength++;
-			}
+				count++;
+			} while (temp > BIG_ZERO);
+			count -= 2;
+			result->num += to_string(count);
+			result->numLength = result->num.length();
+			A = A - BigInteger(count) * B;
+			B = divisor;
+			B.isNegative = false;
 		}
+
 		break;
-	}case(12): {
-		BigInteger temporary;
-		BigInteger _divisor;
-		for (int i = 0; i < dividend.numLength; i++)
+	}case(21): {
+		
+		A.isNegative = false;
+		B.isNegative = false;
+
+		int l = A.numLength - B.numLength, count;
+		BigInteger temp;
+		for (; l >= 0; l--)
 		{
-			temporary.num += dividend.num[i];
-			temporary.num = SubZero(temporary.num);
-			temporary.numLength = temporary.num.length();
-			int _status = Compare(temporary, divisor) % 10;
-			if (_status == 0)
+			count = 1;
+			B.AddZeroRear(l);
+			do
 			{
-				temporary.num = _BaseMultiplication(temporary, '0');
-				temporary.numLength = 1;
-				result->num += '1';
-				result->numLength++;
-				Remainder->num = "0";
-			}
-			else if (_status == 1)
-			{
-				char j = '1';
-				while (1)
+				temp = A - BigInteger(count) * B;
+				if (temp == BIG_ZERO)
 				{
-					_divisor.num = _BaseMultiplication(divisor, j);
-					_divisor.numLength = _divisor.num.length();
-					if (Compare(temporary, _divisor) % 10 == 2)
-					{
-						j--;
-						break;
-					}
-					j++;
+					result->num += to_string(count);
+					result->AddZeroRear(result, l);
+					Remainder->setData(BIG_ZERO);
+					return E_BIGINT_OK;
 				}
-				_divisor.num = _BaseMultiplication(divisor, j);
-				_divisor.numLength = _divisor.num.length();
-				result->num += j;
-				result->numLength++;
-				temporary = temporary - _divisor;
-				//Remainder->num = temporary.num;
-			}
-			else if (_status == 2)
-			{
-				result->num += '0';
-				result->numLength++;
-			}
+				count++;
+			} while (temp > BIG_ZERO);
+			count -= 2;
+			result->num += to_string(count);
+			result->numLength = result->num.length();
+			A = A - BigInteger(count) * B;
+			B = divisor;
+			B.isNegative = false;
 		}
-		if (!dividend.isNegative && divisor.isNegative)
-		{
-			result->isNegative = true;
-		}
+
 		break;
-	}case(21):
+	}case(12):
 	{
 		result->num = "0";
 		if (dividend.isNegative && !divisor.isNegative)
@@ -581,6 +609,8 @@ int BigInteger::Division(BigInteger dividend, BigInteger divisor, BigInteger *Re
 
 	*Remainder = dividend - (*result * divisor);
 	Remainder->numLength = Remainder->num.length();
+	//Remainder->DecToBin();
+	//result->DecToBin();
 	return E_BIGINT_OK;
 }
 //按位与
@@ -633,6 +663,11 @@ BigInteger BigInteger::Power(BigInteger numA, int num)
 		return result;
 	}
 
+	if (num == 0)
+	{
+		return BIG_ONE;
+	}
+
 	BigInteger base(numA);
 
 	while (num != 0)
@@ -655,22 +690,36 @@ BigInteger BigInteger::Power(BigInteger numA, BigInteger num)
 		return A;
 	}
 
-	BigInteger result(1), base(numA);
-
-	while (num != BIG_ZERO)
+	if (num == BIG_ZERO)
 	{
-		if ((num & BIG_ONE) == BIG_ONE)
+		return BIG_ONE;
+	}
+
+	BigInteger result(1), base(numA);
+	num.DecToBin();
+	while (num.Bin != "0")
+	{
+		if ((num.Bin[num.Bin.length() - 1]) == '1')
 		{
 			result = result * base;
 		}
 		base = base * base;
-		num >>= 1;
+		num.Bin.erase(num.Bin.length() - 1, 1);
+		if (num.Bin == "")
+		{
+			num.Bin = "0";
+		}
 	}
 	return result;
 }
-
+//平方
+BigInteger BigInteger::Sqr(BigInteger num)
+{
+	BigInteger result, temp;
+	return result;
+}
 //字符串前补零
-string BigInteger::AddZeroFront(int number)
+inline string BigInteger::AddZeroFront(int number)
 {
 
 	string result = "";
@@ -684,7 +733,7 @@ string BigInteger::AddZeroFront(int number)
 
 
 //static 字符串前补零
-std::string BigInteger::AddZeroFront(std::string A, int number)
+inline std::string BigInteger::AddZeroFront(std::string A, int number)
 {
 	string result = "";
 	for (int i = 0; i < number; i++)
@@ -696,7 +745,7 @@ std::string BigInteger::AddZeroFront(std::string A, int number)
 }
 
 //static BigInteger后补零
-BigInteger BigInteger::AddZeroRear(BigInteger *A, int number)
+inline BigInteger BigInteger::AddZeroRear(BigInteger *A, int number)
 {
 	string temporary = "";
 	BigInteger result;
@@ -709,10 +758,19 @@ BigInteger BigInteger::AddZeroRear(BigInteger *A, int number)
 	return result;
 }
 
+inline void BigInteger::AddZeroRear(int num)
+{
+	for (int i = 0; i < num; i++)
+	{
+		this->num += "0";
+	}
+	this->numLength = this->num.length();
+}
+
 
 
 //消去起始的0
-std::string BigInteger::SubZero(string input)
+inline std::string BigInteger::SubZero(string input)
 {
 	string result = "";
 	int i = 0;
@@ -804,6 +862,13 @@ BigInteger BigInteger::Mod(BigInteger numA, BigInteger numB)
 {
 	BigInteger result;
 	BigInteger useless;
+	if (numA.isNegative)
+	{
+		while (numA.isNegative)
+		{
+			numA = numA + numB;
+		}
+	}
 	int status = Compare(numA, numB) % 10;
 	switch (status)
 	{
@@ -821,6 +886,7 @@ BigInteger BigInteger::Mod(BigInteger numA, BigInteger numB)
 	}
 	}
 	result.numLength = result.num.length();
+	//result.DecToBin();
 	return result;
 }
 //最大公约数
@@ -856,13 +922,18 @@ BigInteger BigInteger::XGcd(BigInteger numA, BigInteger numB, BigInteger *u, Big
 {
 	BigInteger result;
 	u->setData(BIG_ONE);
-	result.setData(numA);
 
 	if (numB == BIG_ZERO)
 	{
 		v->setData(BIG_ZERO);
 		return result;
 	}
+
+	while (numA < BIG_ZERO)
+	{
+		numA = numA + numB;
+	}
+	result.setData(numA);
 
 	BigInteger v1(0), v3(numB), t3, q, t1;
 	do {
@@ -874,28 +945,37 @@ BigInteger BigInteger::XGcd(BigInteger numA, BigInteger numB, BigInteger *u, Big
 		v1 = t1;
 		v3 = t3;
 	} while (v3 != BIG_ZERO);
-	*v = (result - *u * numA) / numB;
+	v->setData((result - *u * numA) / numB);
 
 	return result;
 }
 //TODO 乘法逆元
 int BigInteger::Inverse(BigInteger num, BigInteger n,BigInteger *result)
 {
-	BigInteger u, v, temporary;
-	temporary = XGcd(num, n, &u, &v);
-	if (temporary != BIG_ONE) // 不互素
+	BigInteger u(1), g(num), v1(0), v3(n), t1(1), q, rem;
+	do
 	{
-		result->setData(temporary);
-		return 0;
-	}
-	else//互素
-	{
-		while (u < BIG_ZERO)
+		Division(g, v3, &rem, &q);
+		if (rem > BIG_ZERO)
 		{
-			u = u + n;
+			q = Mod(v1 * q, n);
+			q = Mod(t1 - q, n);
+			t1 = v1;
+			v1 = q;
+			g = v3;
+			v3 = rem;
 		}
-		result->setData(u);
+	} while (rem > BIG_ZERO);
+	g = v3;
+	if (g == BIG_ONE)
+	{
+		result->setData(v1);
 		return 1;
+	}
+	else
+	{
+		result->setData(BIG_ZERO);
+		return 0;
 	}
 }
 //随机数
@@ -934,24 +1014,24 @@ BigInteger BigInteger::Random(BigInteger Down, BigInteger Up)
 	return result;
 }
 
-//素性测试
+//MR素性测试
 bool BigInteger::MR_algorithm(BigInteger num, int k, BigInteger q)
 {	
 	BigInteger
 		K(k),
 		num_1(num - BIG_ONE),
 		a(Random(BIG_TWO, num_1)),
-		b(Montgomery(a, q, num));
+		b(MontgomeryPower(a, q, num));
 	int e = 0;
 
 	if (b == BIG_ONE || b == num_1)
 	{
-		return true;
+		return true; 
 	}
 	BigInteger temporary, result;
 	while ((b != BIG_ONE || b != num_1) && e <= k - 1)
 	{
-		b = Power(b, 2) % num;
+		b = MontgomeryPower(b, BIG_TWO, num);
 		e++;
 		if (b == num_1 || b == BIG_ONE)
 		{
@@ -962,51 +1042,164 @@ bool BigInteger::MR_algorithm(BigInteger num, int k, BigInteger q)
 }
 bool BigInteger::IsPrime(BigInteger input)
 {
-	if ((input % BIG_TWO) == BIG_ZERO)
+	if (input.IsEven() || (input.num[input.num.length() - 1] == '5'))
 	{
 		return false;
 	}
-	cout << "checking . . . . . ." << endl << "doing";
+	/*for (int i = 2; i < 303; i++)
+	{
+		if (input % BigInteger(G_primeIn65536[i]) == BIG_ZERO)
+		{
+			return false;
+		}
+	}*/
 	int k = 0;
 	BigInteger q(input);
 	q--;
-	while ((q % BIG_TWO) == BIG_ZERO)
+	while (q.IsEven())
 	{
 		q = q / BIG_TWO;
 		k++;
 	}
 	bool result;
-	for (int i = 0; i < 25; i++)
+	for (int i = 0; i < 1; i++)
 	{
-		cout << "=";
 		result = MR_algorithm(input, k, q);
 		if (!result)
 		{
-			cout << endl;
 			return false;
 		}
 	}
-	cout << endl;
 	return true;
 }
 //Montgomery算法 模幂运算
-BigInteger BigInteger::Montgomery(BigInteger base, BigInteger power, BigInteger modulus)
+BigInteger BigInteger::MontgomeryPower(BigInteger base, BigInteger power, BigInteger modulus)
 {
 	BigInteger result(BIG_ONE), p(power), b(base);
+	p.DecToBin();
 
-	while (p != BIG_ZERO)
+	while (p.Bin != "0")
 	{
 
-		while ((p & BIG_ONE) != BIG_ONE)
+		if (p.Bin[p.Bin.length() - 1] == '0')
 		{
-			p >>= 1;
-			b = b * b % modulus;
+			p.Bin.erase(p.Bin.length() - 1, 1);
+			//b = b * b % modulus;
+			b = MontgomeryX(b, b, modulus);
 		}
-		p--;
-		result = b * result % modulus;
+		else
+		{
+			p.Bin = BinSubOne(p.Bin);
+			//result = b * result % modulus;
+			result = MontgomeryX(b, result, modulus);
+		}
+		cout << "=";
 	}
 	return result;
 }
+//Montgomery乘幂
+BigInteger BigInteger::MontgomeryX(BigInteger numA, BigInteger numB, BigInteger modulus)
+{
+	BigInteger t, _modulus, _numA(numA), m, u;
+	int s = modulus.num.length();//2^s   r = 2^s
+	BigInteger r_Big(AddZeroRear(&BigInteger(BIG_ONE), s));
+	Inverse(r_Big - modulus, r_Big, &_modulus);//计算n'
+	for (int i = 0; i < s; i++)//a*r
+	{
+		numA.num += "0";
+	}
+	numA.numLength = numA.num.length();
+	_numA = Mod(numA, modulus);
+	
+	//a X b
+	t = _numA * numB;
+	BigInteger temp1(t * _modulus);
+	if (temp1.num.length() >= s)
+	{
+		m.num = temp1.num.substr(temp1.num.length() - s);
+		m.num = SubZero(m.num);
+		m.numLength = m.num.length();
+	}
+	else
+	{
+		m = temp1;
+	}
+	//m = Mod_Bin(t * _modulus, s);
+	BigInteger temp2(t + m * modulus);
+	u.num = temp2.num.erase(temp2.num.length() - s);
+	u.numLength = u.num.length();
+	//u.num = (t + m * modulus).num.erase();
+	if (u >= modulus)
+	{
+		return u - modulus; 
+	}
+	else
+	{
+		return u;
+	}
+}
+//约简
+BigInteger BigInteger::MontgomerySimple(int s, BigInteger n)
+{
+	return BigInteger();
+}
+//负乘法逆
+BigInteger BigInteger::NegativeInv(int s, BigInteger n)
+{
+	BigInteger x(2), y(1);
+	////x.DecToBin();
+	//int i = 2;
+	//do
+	//{
+	//	if (x < Mod_Bin(n * y, x))
+	//		y = y + x;
+	//	x = BIG_TWO * x;
+	//	i++;
+	//} while (i <= s);
+	return x - y;
+}
+//模二进制 N是二进制的位数 2^N
+BigInteger BigInteger::Mod_Bin(BigInteger num, int N)
+{
+	num.DecToBin();
+	BigInteger result;
+	result.Bin = num.Bin.substr(num.Bin.length() - N);
+	result.BinToDec();
+	result.Bin = SubZero(result.Bin);
+	return result;
+}
+//某二进制减1
+inline std::string BigInteger::BinSubOne(std::string num)
+{
+	for (int i = num.length() - 1; i >= 0; i--)
+	{
+		if (num[i] == '1')
+		{
+			num[i] = '0';
+			break;
+		}
+		else
+		{
+			num[i] = '1';
+			for (int j = i - 1; j >= 0; j--)
+			{
+				if (num[j] == '0')
+				{
+					num[j] = '1';
+				}
+				else
+				{
+					num[j] = '0';
+					break;
+				}
+			}
+			break;
+		}
+	}
+	num = SubZero(num);
+	return num;
+}
+
 //欧拉函数
 BigInteger BigInteger::Euler(BigInteger numA, BigInteger numB)
 {
@@ -1130,11 +1323,10 @@ BigInteger operator >> (BigInteger &numA, int num)
 		return BigInteger(0);
 	}
 	BigInteger result(numA);
-	for (int i = 0; i < num; i++)
-	{
-		result = result / BIG_TWO;
-	}
-	result.DecToBin();
+	
+	result.Bin.erase(result.Bin.length() - num, num);
+
+	result.BinToDec();
 	result.numLength = result.num.length();
 	return result;
 }
@@ -1263,5 +1455,39 @@ std::istream & operator >> (std::istream &in, BigInteger &numA)
 	numA.num = BigInteger::SubZero(num);
 	numA.numLength = numA.num.length();
 	return in;
+}
+
+//65535以内素数表
+void G_CreatePrimeList()
+{
+	bool *prime = new bool[65536];
+	for (int i = 0; i < 65536; i++)
+	{
+		prime[i] = true;
+		if (i % 2 == 0)
+		{
+			prime[i] = false;
+		}
+	}
+	for (int i = 3; i <= sqrt(65536); i += 2)
+	{
+		if (prime[i])
+		{
+			for (int j = i + i; j < 65536; j += i)
+			{
+				prime[j] = false;
+			}
+		}
+	}
+	int j = 0;
+	for (int i = 0; i < 65536; i++)
+	{
+		if (prime[i] == true)
+		{
+			G_primeIn65536[j] = i;
+			j++;
+		}
+	}
+	delete[]prime;
 }
 
